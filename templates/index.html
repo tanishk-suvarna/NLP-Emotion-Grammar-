@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        NLP Grammar & Emotion Analyzer
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='style.css'
+        ) }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <header>
+
+        <h1>
+            NLP Grammar & Emotion Analyzer
+        </h1>
+
+        <p>
+            Analyze your text using
+            Natural Language Processing
+        </p>
+
+    </header>
+
+
+    <div class="input-card">
+
+        <textarea
+            id="textInput"
+            placeholder="Enter your text here..."
+        ></textarea>
+
+
+        <button
+            onclick="analyzeText()"
+        >
+            Analyze Text
+        </button>
+
+    </div>
+
+
+    <div
+        id="loading"
+        class="loading hidden"
+    >
+        Analyzing your text...
+    </div>
+
+
+    <div
+        id="results"
+        class="hidden"
+    >
+
+
+        <div class="result-grid">
+
+
+            <div class="result-card">
+
+                <h2>
+                    Grammar Analysis
+                </h2>
+
+                <p>
+                    Errors Found:
+                </p>
+
+                <div
+                    id="errorCount"
+                    class="big-number"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="result-card">
+
+                <h2>
+                    Detected Emotion
+                </h2>
+
+                <div
+                    id="emotion"
+                    class="emotion"
+                >
+                    Neutral
+                </div>
+
+            </div>
+
+
+            <div class="result-card">
+
+                <h2>
+                    Sentiment
+                </h2>
+
+                <div
+                    id="sentiment"
+                    class="sentiment"
+                >
+                    Neutral
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="text-card">
+
+            <h2>
+                Corrected Text
+            </h2>
+
+            <p id="correctedText"></p>
+
+        </div>
+
+
+        <div class="text-card">
+
+            <h2>
+                Grammar Suggestions
+            </h2>
+
+            <div id="errors"></div>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+async function analyzeText() {
+
+    const text =
+        document.getElementById(
+            "textInput"
+        ).value.trim();
+
+
+    if (!text) {
+
+        alert(
+            "Please enter some text."
+        );
+
+        return;
+
+    }
+
+
+    document
+        .getElementById("loading")
+        .classList
+        .remove("hidden");
+
+
+    document
+        .getElementById("results")
+        .classList
+        .add("hidden");
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/analyze",
+                {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        text: text
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        document
+            .getElementById("loading")
+            .classList
+            .add("hidden");
+
+
+        if (!data.success) {
+
+            alert(data.message);
+
+            return;
+
+        }
+
+
+        document
+            .getElementById("results")
+            .classList
+            .remove("hidden");
+
+
+        // Error count
+
+        document
+            .getElementById(
+                "errorCount"
+            )
+            .innerText =
+                data.error_count;
+
+
+        // Emotion
+
+        document
+            .getElementById(
+                "emotion"
+            )
+            .innerText =
+                data.emotion;
+
+
+        // Sentiment
+
+        document
+            .getElementById(
+                "sentiment"
+            )
+            .innerText =
+                data.sentiment;
+
+
+        // Corrected text
+
+        document
+            .getElementById(
+                "correctedText"
+            )
+            .innerText =
+                data.corrected;
+
+
+        // Grammar errors
+
+        const errorsContainer =
+            document.getElementById(
+                "errors"
+            );
+
+
+        errorsContainer.innerHTML = "";
+
+
+        if (data.errors.length === 0) {
+
+            errorsContainer.innerHTML =
+                "<p class='success'>No grammar errors found.</p>";
+
+        }
+
+        else {
+
+            data.errors.forEach(
+                function(error) {
+
+                    const div =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    div.className =
+                        "error-item";
+
+
+                    div.innerHTML = `
+
+                        <strong>
+                            ${error.error}
+                        </strong>
+
+                        <p>
+                            ${error.message}
+                        </p>
+
+                        <small>
+                            Suggestions:
+                            ${
+                                error.suggestions.join(
+                                    ", "
+                                )
+                            }
+                        </small>
+
+                    `;
+
+
+                    errorsContainer.appendChild(
+                        div
+                    );
+
+                }
+            );
+
+        }
+
+    }
+
+    catch(error) {
+
+        document
+            .getElementById("loading")
+            .classList
+            .add("hidden");
+
+
+        alert(
+            "Error connecting to server."
+        );
+
+        console.log(error);
+
+    }
+
+}
+
+</script>
+
+
+</body>
+
+</html>
