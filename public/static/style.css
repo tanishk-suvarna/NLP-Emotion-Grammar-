@@ -287,6 +287,38 @@ button:hover {
 
 }
 
+.analysis-note {
+    margin-top: 15px;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+.error-message {
+    margin-top: 20px;
+    color: #f87171;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+textarea:focus-visible,
+button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 4px;
+}
+
+@media (max-width: 650px) {
+    .result-grid {
+        grid-template-columns: 1fr;
+    }
+
+    header h1 {
+        font-size: 30px;
+    }
+}
+
 
 .success {
 

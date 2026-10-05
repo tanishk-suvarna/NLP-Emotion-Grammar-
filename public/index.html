@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        NLP Grammar & Emotion Analyzer
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <header>
+
+        <h1>
+            NLP Grammar & Emotion Analyzer
+        </h1>
+
+        <p>
+            Analyze your text using
+            Natural Language Processing
+        </p>
+
+    </header>
+
+
+    <div class="input-card">
+
+        <textarea
+            id="textInput"
+            aria-label="Text to analyze"
+            maxlength="5000"
+            placeholder="Enter your text here..."
+        ></textarea>
+
+
+        <button
+            id="analyzeButton"
+            onclick="analyzeText()"
+        >
+            Analyze Text
+        </button>
+
+    </div>
+
+    <p class="analysis-note">Grammar checking covers common subject–verb agreement errors. Text is sent for AI emotion and sentiment analysis.</p>
+
+    <p id="errorMessage" class="error-message hidden" role="alert"></p>
+
+    <div
+        id="loading"
+        class="loading hidden"
+        role="status"
+    >
+        Analyzing your text...
+    </div>
+
+
+    <div
+        id="results"
+        class="hidden"
+    >
+
+
+        <div class="result-grid">
+
+
+            <div class="result-card">
+
+                <h2>
+                    Grammar Analysis
+                </h2>
+
+                <p>
+                    Errors Found:
+                </p>
+
+                <div
+                    id="errorCount"
+                    class="big-number"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="result-card">
+
+                <h2>
+                    Detected Emotion
+                </h2>
+
+                <div
+                    id="emotion"
+                    class="emotion"
+                >
+                    Neutral
+                </div>
+
+            </div>
+
+
+            <div class="result-card">
+
+                <h2>
+                    Sentiment
+                </h2>
+
+                <div
+                    id="sentiment"
+                    class="sentiment"
+                >
+                    Neutral
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div class="text-card">
+
+            <h2>
+                Corrected Text
+            </h2>
+
+            <p id="correctedText"></p>
+
+        </div>
+
+
+        <div class="text-card">
+
+            <h2>
+                Grammar Suggestions
+            </h2>
+
+            <div id="errors"></div>
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+async function analyzeText() {
+    const text = document.getElementById("textInput").value.trim();
+    const button = document.getElementById("analyzeButton");
+    const loading = document.getElementById("loading");
+    const results = document.getElementById("results");
+    const errorMessage = document.getElementById("errorMessage");
+
+    errorMessage.classList.add("hidden");
+    results.classList.add("hidden");
+
+    if (!text) {
+        errorMessage.textContent = "Please enter some text.";
+        errorMessage.classList.remove("hidden");
+        return;
+    }
+
+    button.disabled = true;
+    loading.classList.remove("hidden");
+
+    try {
+        const response = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+            signal: AbortSignal.timeout(30000)
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Analysis is temporarily unavailable. Please try again.");
+        }
+
+        document.getElementById("errorCount").textContent = data.error_count;
+        document.getElementById("emotion").textContent = data.emotion;
+        document.getElementById("sentiment").textContent = data.sentiment;
+        document.getElementById("correctedText").textContent = data.corrected;
+
+        const errorsContainer = document.getElementById("errors");
+        errorsContainer.replaceChildren();
+
+        if (data.errors.length === 0) {
+            const message = document.createElement("p");
+            message.className = "success";
+            message.textContent = "No errors found by the supported grammar rules.";
+            errorsContainer.appendChild(message);
+        } else {
+            for (const error of data.errors) {
+                const item = document.createElement("div");
+                item.className = "error-item";
+                const title = document.createElement("strong");
+                title.textContent = error.error;
+                const message = document.createElement("p");
+                message.textContent = error.message;
+                const suggestions = document.createElement("small");
+                suggestions.textContent = "Suggestions: " + error.suggestions.join(", ");
+                item.append(title, message, suggestions);
+                errorsContainer.appendChild(item);
+            }
+        }
+
+        results.classList.remove("hidden");
+    } catch (error) {
+        errorMessage.textContent = error.name === "TimeoutError"
+            ? "Analysis took too long. Please try again."
+            : error instanceof TypeError || error instanceof SyntaxError
+                ? "Unable to connect to the analysis service. Please try again."
+                : error.message;
+        errorMessage.classList.remove("hidden");
+    } finally {
+        loading.classList.add("hidden");
+        button.disabled = false;
+    }
+}
+
+</script>
+
+
+</body>
+
+</html>
